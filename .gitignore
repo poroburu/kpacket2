@@ -394,3 +394,43 @@ FodyWeavers.xsd
 Thumbs.db
 *.exe
 
+
+####################################################################################################
+# C/C++ and CMake/Ninja build artifacts (repo-specific)
+####################################################################################################
+
+# Common build directories
+[Bb]uild/
+build*/
+out/
+dist/
+cmake-build-*/
+
+# Outputs
+bin/
+lib/
+
+# Compiled binaries and libraries
+*.dll
+*.lib
+*.exp
+*.map
+*.idb
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+CTestCustom.cmake
+install_manifest.txt
+Makefile
+Testing/
+
+# Ninja files
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Tooling generated
+compile_commands.json
