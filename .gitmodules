@@ -1,0 +1,3 @@
+[submodule "XiPackets"]
+	path = XiPackets
+	url = https://github.com/atom0s/XiPackets/
