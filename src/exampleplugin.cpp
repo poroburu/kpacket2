@@ -20,7 +20,6 @@
  */
 
 #include "exampleplugin.hpp"
-#include <zmq.hpp>
 
 namespace exampleplugin
 {
@@ -165,6 +164,37 @@ namespace exampleplugin
         this->log_  = logger;
         this->id_   = id;
 
+        // Initialize ZMQ Relay System
+        try {
+            kpacket::ZmqRelay::Config config;
+            config.pub_endpoint = "tcp://*:5555";
+            config.rep_endpoint = "tcp://*:5556";  
+            config.push_endpoint = "tcp://*:5557";
+            
+            zmq_relay_ = std::make_unique<kpacket::ZmqRelay>(config);
+            
+            // Set up packet injector
+            zmq_relay_->SetPacketInjector([this](uint16_t id, const std::vector<uint8_t>& data) -> bool {
+                // Inject packet back into game - implementation depends on Ashita SDK
+                // For now, return false to indicate injection not yet implemented
+                this->log_->Logf(0, "kpacket2", 
+                    "Packet injection requested: ID=0x%04X, Size=%zu", id, data.size());
+                return false;
+            });
+            
+            if (!zmq_relay_->Initialize()) {
+                this->log_->Logf(1, "kpacket2", "Failed to initialize ZMQ relay system");
+                return false;
+            }
+            
+            this->log_->Logf(0, "kpacket2", "ZMQ relay system initialized successfully");
+            
+        } catch (const std::exception& e) {
+            this->log_->Logf(1, "kpacket2", 
+                "ZMQ relay initialization error: %s", e.what());
+            return false;
+        }
+
         return true;
     }
 
@@ -178,6 +208,12 @@ namespace exampleplugin
      */
     auto plugin::Release(void) -> void
     {
+        // Shutdown ZMQ relay system
+        if (zmq_relay_) {
+            zmq_relay_->Shutdown();
+            zmq_relay_.reset();
+            this->log_->Logf(0, "kpacket2", "ZMQ relay system shutdown");
+        }
     }
 
     /**
@@ -453,13 +489,23 @@ namespace exampleplugin
      */
     auto plugin::HandleIncomingPacket(uint16_t id, uint32_t size, const uint8_t* data, uint8_t* modified, uint32_t size_chunk, const uint8_t* data_chunk, bool injected, bool blocked) -> bool
     {
-        UNREFERENCED_PARAMETER(size);
-        UNREFERENCED_PARAMETER(data);
-        UNREFERENCED_PARAMETER(size_chunk);
-        UNREFERENCED_PARAMETER(data_chunk);
-        UNREFERENCED_PARAMETER(injected);
-        UNREFERENCED_PARAMETER(blocked);
+        // Relay packet through ZMQ system
+        if (zmq_relay_ && zmq_relay_->IsRunning()) {
+            try {
+                auto packet_info = kpacket::PacketParser::CreatePacketInfo(
+                    id, size, data, kpacket::Direction::INCOMING, 
+                    injected, blocked, size_chunk, data_chunk
+                );
+                
+                zmq_relay_->PublishPacket(packet_info);
+                
+            } catch (const std::exception& e) {
+                this->log_->Logf(1, "kpacket2", 
+                    "Failed to relay incoming packet 0x%04X: %s", id, e.what());
+            }
+        }
 
+        // Original example packet handling (can be removed or kept for reference)
         // Packet: Emote
         if (id == 0x005A)
         {
@@ -520,13 +566,23 @@ namespace exampleplugin
      */
     auto plugin::HandleOutgoingPacket(uint16_t id, uint32_t size, const uint8_t* data, uint8_t* modified, uint32_t size_chunk, const uint8_t* data_chunk, bool injected, bool blocked) -> bool
     {
-        UNREFERENCED_PARAMETER(size);
-        UNREFERENCED_PARAMETER(data);
-        UNREFERENCED_PARAMETER(size_chunk);
-        UNREFERENCED_PARAMETER(data_chunk);
-        UNREFERENCED_PARAMETER(injected);
-        UNREFERENCED_PARAMETER(blocked);
+        // Relay packet through ZMQ system
+        if (zmq_relay_ && zmq_relay_->IsRunning()) {
+            try {
+                auto packet_info = kpacket::PacketParser::CreatePacketInfo(
+                    id, size, data, kpacket::Direction::OUTGOING, 
+                    injected, blocked, size_chunk, data_chunk
+                );
+                
+                zmq_relay_->PublishPacket(packet_info);
+                
+            } catch (const std::exception& e) {
+                this->log_->Logf(1, "kpacket2", 
+                    "Failed to relay outgoing packet 0x%04X: %s", id, e.what());
+            }
+        }
 
+        // Original example packet handling (can be removed or kept for reference)
         // Packet: Emote
         if (id == 0x005D)
         {

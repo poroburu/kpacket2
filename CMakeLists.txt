@@ -60,6 +60,10 @@ set(${ASHITA_PROJECT_NAME}_src
     "src/exports.def"
     "src/exampleplugin.cpp"
     "src/exampleplugin.hpp"
+    "src/packet_types.cpp"
+    "src/packet_types.hpp"
+    "src/zmq_relay.cpp"
+    "src/zmq_relay.hpp"
     )
 
 # Define the library..
@@ -97,6 +101,10 @@ ashita_sdk_set_linker_enable_safe_seh(${ASHITA_PROJECT_NAME})
 # link ZeroMQ
 find_package(cppzmq CONFIG REQUIRED)
 target_link_libraries(${ASHITA_PROJECT_NAME} PRIVATE cppzmq)
+
+# link nlohmann/json
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${ASHITA_PROJECT_NAME} PRIVATE nlohmann_json)
 
 # Copy .dll to plugin directory
 if (WIN32)

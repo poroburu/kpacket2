@@ -39,6 +39,9 @@
  * ASHITA4_SDK_PATH
  */
 #include "Ashita.h"
+#include "zmq_relay.hpp"
+#include "packet_types.hpp"
+#include <memory>
 
 namespace exampleplugin
 {
@@ -48,6 +51,9 @@ namespace exampleplugin
         ILogManager* log_;         // Pointer to the main LogManager object.
         IDirect3DDevice8* device_; // Pointer to the games Direct3D device object.
         uint32_t id_;              // The plugins ids. (The plugins current base address.)
+        
+        // ZMQ Relay System
+        std::unique_ptr<kpacket::ZmqRelay> zmq_relay_;
 
     public:
         plugin(void);
