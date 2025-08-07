@@ -20,6 +20,7 @@
  */
 
 #include "exampleplugin.hpp"
+#include <zmq.hpp>
 
 namespace exampleplugin
 {

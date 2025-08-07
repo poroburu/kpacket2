@@ -53,16 +53,24 @@
             }
         },
         {
+            "name": "vcpkg",
+            "hidden": true,
+            "environment": {
+                "VCPKG_ROOT": "${env:USERPROFILE}/git/vcpkg",
+                "CMAKE_TOOLCHAIN_FILE": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            }
+        },
+        {
             "name": "x86-debug-win",
             "displayName": "Debug (x86)",
             "description": "Debug build for Windows (x86).",
-            "inherits": ["win-ninja", "x86", "Debug", "HorizonXI"]
+            "inherits": ["win-ninja", "x86", "Debug", "HorizonXI", "vcpkg"]
         },
         {
             "name": "x86-release-win",
             "displayName": "Release (x86)",
             "description": "Release build for Windows (x86).",
-            "inherits": ["win-ninja", "x86", "Release", "HorizonXI"]
+            "inherits": ["win-ninja", "x86", "Release", "HorizonXI", "vcpkg"]
         }
     ],
     "buildPresets": []

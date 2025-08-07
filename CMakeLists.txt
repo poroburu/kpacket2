@@ -94,6 +94,10 @@ endif()
 # Note: This must be disabled if compiling with Direct3D calls!
 ashita_sdk_set_linker_enable_safe_seh(${ASHITA_PROJECT_NAME})
 
+# link ZeroMQ
+find_package(cppzmq CONFIG REQUIRED)
+target_link_libraries(${ASHITA_PROJECT_NAME} PRIVATE cppzmq)
+
 # Copy .dll to plugin directory
 if (WIN32)
     add_custom_command(TARGET ${ASHITA_PROJECT_NAME} POST_BUILD
