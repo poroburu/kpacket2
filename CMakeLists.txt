@@ -106,12 +106,17 @@ target_link_libraries(${ASHITA_PROJECT_NAME} PRIVATE cppzmq)
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${ASHITA_PROJECT_NAME} PRIVATE nlohmann_json)
 
-# Copy .dll to plugin directory
+# Copy plugin and its runtime dependency .dlls to the plugin directory
 if (WIN32)
     add_custom_command(TARGET ${ASHITA_PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:${ASHITA_PROJECT_NAME}>"
             "$ENV{ASHITA4_PLUGIN_PATH}/${ASHITA_PROJECT_NAME}.dll"
-        COMMENT "Copying .dll to plugin directory"
+        # Auto-discover and copy dependent runtime DLLs
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:${ASHITA_PROJECT_NAME}>
+            "$ENV{ASHITA4_PLUGIN_PATH}"
+        COMMAND_EXPAND_LISTS
+        COMMENT "Copying plugin and runtime dependency DLLs to plugin directory"
     )
 endif()
