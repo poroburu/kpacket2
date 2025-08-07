@@ -1,11 +1,11 @@
-/**
- * Ashita Example Plugin - Copyright (c) 2023 Ashita Development Team
+/*
+ * Ashita kpacket Plugin - Copyright (c) 2025 Poroburu Development Team
  * Contact: https://www.ashitaxi.com/
  * Contact: https://discord.gg/Ashita
  *
- * This file is part of Ashita Example Plugin.
+ * This file is part of Ashita kpacket Plugin.
  *
- * Ashita Example Plugin is free software: you can redistribute it and/or modify
+ * Ashita kpacket Plugin is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,8 +19,8 @@
  * along with Ashita Example Plugin.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef EXAMPLEPLUGIN_HPP_INCLUDED
-#define EXAMPLEPLUGIN_HPP_INCLUDED
+#ifndef KPACKET_HPP_INCLUDED
+#define KPACKET_HPP_INCLUDED
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -28,29 +28,20 @@
 
 /**
  * Main Ashita SDK Include
- * 
- * In order to compile a proper Ashita plugin, this header is required to be included. This header
- * includes the various other generally used parts of the Ashita SDK, as well as defines the various
- * SDK interfaces, enumerations, and other type definitions required.
- * 
- * To help with uniformed pathing, Ashita bases all SDK includes from a parent path. You can set this
- * parent path via the following environment variable on your system: 
- * 
- * ASHITA4_SDK_PATH
  */
 #include "Ashita.h"
 #include "zmq_relay.hpp"
 #include "packet_types.hpp"
 #include <memory>
 
-namespace exampleplugin
+namespace kpacket
 {
     class plugin final : public IPlugin
     {
-        IAshitaCore* core_;        // Pointer to the main AshitaCore object.
-        ILogManager* log_;         // Pointer to the main LogManager object.
-        IDirect3DDevice8* device_; // Pointer to the games Direct3D device object.
-        uint32_t id_;              // The plugins ids. (The plugins current base address.)
+        IAshitaCore* core_;
+        ILogManager* log_;
+        IDirect3DDevice8* device_;
+        uint32_t id_;
         
         // ZMQ Relay System
         std::unique_ptr<kpacket::ZmqRelay> zmq_relay_;
@@ -97,6 +88,8 @@ namespace exampleplugin
         auto Direct3DDrawIndexedPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertexIndices, UINT PrimitiveCount, CONST void* pIndexData, D3DFORMAT IndexDataFormat, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride) -> bool override;
     };
 
-} // namespace exampleplugin
+} // namespace kpacket
 
-#endif // EXAMPLEPLUGIN_HPP_INCLUDED
+#endif // KPACKET_HPP_INCLUDED
+
+

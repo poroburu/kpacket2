@@ -1,8 +1,8 @@
-# kpacket2 - ZMQ Packet Relay Design
+# kpacket - ZMQ Packet Relay Design
 
 ## Overview
 
-kpacket2 is a comprehensive packet relay system for Final Fantasy XI that captures, analyzes, and streams game packets over ZeroMQ (ZMQ). It integrates with the Ashita plugin framework to intercept packets at the network layer and provides real-time streaming and command interfaces for external applications.
+kpacket is a comprehensive packet relay system for Final Fantasy XI that captures, analyzes, and streams game packets over ZeroMQ (ZMQ). It integrates with the Ashita plugin framework to intercept packets at the network layer and provides real-time streaming and command interfaces for external applications.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ kpacket2 is a comprehensive packet relay system for Final Fantasy XI that captur
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   FFXI Client   │    │  kpacket2 Plugin │    │ External Clients│
+│   FFXI Client   │    │  kpacket Plugin │    │ External Clients│
 ├─────────────────┤    ├──────────────────┤    ├─────────────────┤
 │ Incoming Packets│───▶│ Packet Interceptor│───▶│ Analysis Tools  │
 │ Outgoing Packets│◀───│ Packet Injector  │◀───│ Bot Clients     │

@@ -1,4 +1,4 @@
-# kpacket2 - Advanced FFXI Packet Relay System
+# kpacket - Advanced FFXI Packet Relay System
 
 A high-performance ZeroMQ-based packet relay system for Final Fantasy XI that captures, analyzes, and streams game packets in real-time.
 
@@ -38,7 +38,7 @@ vcpkg install cppzmq nlohmann-json
 
 ### Usage
 
-1. Load the plugin in Ashita: `/load kpacket2`
+1. Load the plugin in Ashita: `/load kpacket`
 2. Start the packet monitor client: `./bin/examples/packet_monitor.exe`
 3. Connect your tools to ZMQ endpoints:
    - `tcp://localhost:5555` - Packet streaming (SUB)

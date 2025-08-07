@@ -22,7 +22,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # Set the project..
-set(ASHITA_PROJECT_NAME "exampleplugin")
+set(ASHITA_PROJECT_NAME "kpacket")
 project(${ASHITA_PROJECT_NAME} CXX)
 
 # Enable generation of compile_commands.json
@@ -58,8 +58,8 @@ set(${ASHITA_PROJECT_NAME}_res
 
 set(${ASHITA_PROJECT_NAME}_src
     "src/exports.def"
-    "src/exampleplugin.cpp"
-    "src/exampleplugin.hpp"
+    "src/kpacket.cpp"
+    "src/kpacket.hpp"
     "src/packet_types.cpp"
     "src/packet_types.hpp"
     "src/zmq_relay.cpp"

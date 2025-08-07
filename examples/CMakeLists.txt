@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(kpacket2_examples CXX)
+project(kpacket_examples CXX)
 
 # Find required packages
 find_package(cppzmq CONFIG REQUIRED)
