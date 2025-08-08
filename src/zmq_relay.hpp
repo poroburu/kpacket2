@@ -44,6 +44,15 @@ public:
         bool enable_command_interface = true;
         bool enable_reliable_queue = true;
         size_t max_queue_size = 10000;
+        // Socket/transport tuning
+        int pub_snd_hwm = 5000;
+        int pub_linger_ms = 0;
+        int rep_rcv_timeout_ms = 100;
+        int rep_linger_ms = 0;
+        int push_linger_ms = 0;
+        // Protocol options
+        std::string protocol_version = "v1";
+        bool pub_use_multipart_raw = true; // topic, meta json, raw data, optional raw chunk
     };
 
     ZmqRelay(const Config& config = Config{});
@@ -85,10 +94,19 @@ private:
     std::queue<PacketInfo> packet_queue_;
     std::mutex queue_mutex_;
     
+    // Publish queue to decouple Ashita thread from ZMQ send
+    std::queue<PacketInfo> publish_queue_;
+    std::mutex publish_mutex_;
+    std::condition_variable publish_cv_;
+    
     // Filtering and handling
     std::function<bool(const PacketInfo&)> packet_filter_;
     std::map<std::string, CommandHandler> command_handlers_;
     PacketInjector packet_injector_;
+    
+    // Session and ids
+    std::string session_uuid_;
+    std::atomic<uint64_t> next_message_id_{1};
     
     // Thread functions
     void PublisherThread();
@@ -98,11 +116,15 @@ private:
     // Utility functions
     nlohmann::json PacketToJson(const PacketInfo& packet);
     std::string ProcessCommand(const std::string& command_str);
+    std::string TopicForPacket(const PacketInfo& packet) const;
+    void ApplySocketOptions();
     
     // Built-in command handlers
     std::string HandleStatusCommand(const nlohmann::json& params);
+    std::string HandleHelloCommand(const nlohmann::json& params);
     std::string HandleInjectCommand(const nlohmann::json& params);
     std::string HandleFilterCommand(const nlohmann::json& params);
+    std::string HandleHealthCommand(const nlohmann::json& params);
     std::string HandleStatsCommand(const nlohmann::json& params);
     
     // Statistics
@@ -111,6 +133,8 @@ private:
         std::atomic<uint64_t> commands_processed{0};
         std::atomic<uint64_t> packets_injected{0};
         std::atomic<uint64_t> packets_filtered{0};
+        std::atomic<uint64_t> publish_dropped{0};
+        std::atomic<uint64_t> pub_send_errors{0};
     } stats_;
 };
 

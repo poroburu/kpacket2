@@ -48,10 +48,16 @@ std::string base64_encode(const std::vector<uint8_t>& data) {
 
 ZmqRelay::ZmqRelay(const Config& config) 
     : config_(config) {
+    // Generate session UUID (simple placeholder)
+    session_uuid_ = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
     
     // Register built-in command handlers
     RegisterCommandHandler("status", [this](const nlohmann::json& params) {
         return HandleStatusCommand(params);
+    });
+    RegisterCommandHandler("hello", [this](const nlohmann::json& params) {
+        return HandleHelloCommand(params);
     });
     
     RegisterCommandHandler("inject", [this](const nlohmann::json& params) {
@@ -95,6 +101,8 @@ bool ZmqRelay::Initialize() {
         
         running_ = true;
         
+        ApplySocketOptions();
+
         // Start worker threads
         if (config_.enable_packet_streaming) {
             pub_thread_ = std::thread(&ZmqRelay::PublisherThread, this);
@@ -133,13 +141,13 @@ void ZmqRelay::Shutdown() {
 
 void ZmqRelay::PublishPacket(const PacketInfo& packet) {
     if (!running_ || !pub_socket_) return;
-    
+
     // Apply filter if set
     if (packet_filter_ && !packet_filter_(packet)) {
         stats_.packets_filtered++;
         return;
     }
-    
+
     // Add to reliable queue if enabled
     if (config_.enable_reliable_queue) {
         std::lock_guard<std::mutex> lock(queue_mutex_);
@@ -147,22 +155,13 @@ void ZmqRelay::PublishPacket(const PacketInfo& packet) {
             packet_queue_.push(packet);
         }
     }
-    
-    // Publish immediately for real-time streaming
-    try {
-        auto json_msg = PacketToJson(packet);
-        std::string topic = "packet." + std::to_string(packet.id);
-        
-        zmq::multipart_t multipart;
-        multipart.addstr(topic);
-        multipart.addstr(json_msg.dump());
-        multipart.send(*pub_socket_);
-        
-        stats_.packets_published++;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Failed to publish packet: " << e.what() << std::endl;
+
+    // Enqueue for publisher thread
+    {
+        std::lock_guard<std::mutex> lock(publish_mutex_);
+        publish_queue_.push(packet);
     }
+    publish_cv_.notify_one();
 }
 
 void ZmqRelay::SetPacketFilter(std::function<bool(const PacketInfo&)> filter) {
@@ -179,8 +178,55 @@ void ZmqRelay::SetPacketInjector(PacketInjector injector) {
 
 void ZmqRelay::PublisherThread() {
     while (running_) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        // Main publishing happens in PublishPacket() called from main thread
+        std::unique_lock<std::mutex> lock(publish_mutex_);
+        publish_cv_.wait_for(lock, std::chrono::milliseconds(50), [this]{ return !publish_queue_.empty() || !running_; });
+        if (!running_) break;
+        if (publish_queue_.empty()) continue;
+
+        PacketInfo pkt = std::move(publish_queue_.front());
+        publish_queue_.pop();
+        lock.unlock();
+
+        try {
+            // Augment message
+            auto json_msg = PacketToJson(pkt);
+            json_msg["version"] = config_.protocol_version;
+            json_msg["session_uuid"] = session_uuid_;
+            json_msg["message_id"] = next_message_id_++;
+
+            std::string topic = TopicForPacket(pkt);
+
+            if (config_.pub_use_multipart_raw) {
+                zmq::multipart_t mp;
+                mp.addstr(topic);
+                // metadata without raw payload to avoid duplication
+                nlohmann::json meta = json_msg;
+                meta.erase("data");
+                meta.erase("chunk_data");
+                mp.addstr(meta.dump());
+                // raw packet data
+                zmq::message_t raw(pkt.data.size());
+                if (!pkt.data.empty()) std::memcpy(raw.data(), pkt.data.data(), pkt.data.size());
+                mp.add(std::move(raw));
+                // optional chunk frame
+                if (!pkt.chunk_data.empty()) {
+                    zmq::message_t chunk(pkt.chunk_data.size());
+                    std::memcpy(chunk.data(), pkt.chunk_data.data(), pkt.chunk_data.size());
+                    mp.add(std::move(chunk));
+                }
+                mp.send(*pub_socket_);
+            } else {
+                zmq::multipart_t mp;
+                mp.addstr(topic);
+                mp.addstr(json_msg.dump());
+                mp.send(*pub_socket_);
+            }
+
+            stats_.packets_published++;
+        } catch (const std::exception& e) {
+            stats_.pub_send_errors++;
+            std::cerr << "Failed to publish packet: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -190,7 +236,7 @@ void ZmqRelay::CommandThread() {
             zmq::message_t request;
             
             // Set receive timeout
-            rep_socket_->set(zmq::sockopt::rcvtimeo, 100);
+            rep_socket_->set(zmq::sockopt::rcvtimeo, config_.rep_rcv_timeout_ms);
             
             if (rep_socket_->recv(request, zmq::recv_flags::dontwait)) {
                 std::string command_str(static_cast<char*>(request.data()), request.size());
@@ -275,6 +321,18 @@ std::string ZmqRelay::HandleStatusCommand(const nlohmann::json& /* params */) {
         {"command_interface", config_.enable_command_interface},
         {"reliable_queue", config_.enable_reliable_queue}
     };
+    response["version"] = config_.protocol_version;
+    response["session_uuid"] = session_uuid_;
+    return response.dump();
+}
+
+std::string ZmqRelay::HandleHelloCommand(const nlohmann::json& /*params*/) {
+    nlohmann::json response;
+    response["version"] = config_.protocol_version;
+    response["session_uuid"] = session_uuid_;
+    response["capabilities"] = {
+        {"multipart_raw", config_.pub_use_multipart_raw}
+    };
     return response.dump();
 }
 
@@ -319,6 +377,8 @@ std::string ZmqRelay::HandleStatsCommand(const nlohmann::json& /* params */) {
         {"commands_processed", stats_.commands_processed.load()},
         {"packets_injected", stats_.packets_injected.load()},
         {"packets_filtered", stats_.packets_filtered.load()},
+        {"publish_dropped", stats_.publish_dropped.load()},
+        {"pub_send_errors", stats_.pub_send_errors.load()},
         {"queue_size", packet_queue_.size()}
     };
     return response.dump();
@@ -355,6 +415,36 @@ void to_json(nlohmann::json& j, const PacketInfo& packet) {
     
     if (!packet.chunk_data.empty()) {
         j["chunk_data"] = base64_encode(packet.chunk_data);
+    }
+}
+
+std::string ZmqRelay::TopicForPacket(const PacketInfo& packet) const {
+    // kpacket.<version>.<world|lobby|patch|unknown>.<s2c|c2s>.<hex_id>
+    auto type = std::string(
+        packet.type == PacketType::WORLD_CLIENT_TO_SERVER || packet.type == PacketType::WORLD_SERVER_TO_CLIENT ? "world" :
+        packet.type == PacketType::LOBBY_CLIENT_TO_SERVER || packet.type == PacketType::LOBBY_SERVER_TO_CLIENT ? "lobby" :
+        packet.type == PacketType::PATCH_CLIENT_TO_SERVER || packet.type == PacketType::PATCH_SERVER_TO_CLIENT ? "patch" :
+        "unknown");
+    auto dir = packet.direction == Direction::INCOMING ? "s2c" : "c2s";
+    char hex_id[8];
+    std::snprintf(hex_id, sizeof(hex_id), "0x%04X", packet.id);
+    return std::string("kpacket.") + config_.protocol_version + "." + type + "." + dir + "." + hex_id;
+}
+
+void ZmqRelay::ApplySocketOptions() {
+    try {
+        if (pub_socket_) {
+            pub_socket_->set(zmq::sockopt::sndhwm, config_.pub_snd_hwm);
+            pub_socket_->set(zmq::sockopt::linger, config_.pub_linger_ms);
+        }
+        if (rep_socket_) {
+            rep_socket_->set(zmq::sockopt::linger, config_.rep_linger_ms);
+        }
+        if (push_socket_) {
+            push_socket_->set(zmq::sockopt::linger, config_.push_linger_ms);
+        }
+    } catch (...) {
+        // best effort
     }
 }
 

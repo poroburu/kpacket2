@@ -120,3 +120,9 @@ if (WIN32)
         COMMENT "Copying plugin and runtime dependency DLLs to plugin directory"
     )
 endif()
+
+# Examples / tools (FTXUI monitor and basic monitor)
+option(KPACKET_BUILD_EXAMPLES "Build example tools (packet monitors)" ON)
+if (KPACKET_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

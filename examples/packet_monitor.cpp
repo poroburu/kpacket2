@@ -48,7 +48,7 @@ public:
         try {
             context_ = std::make_unique<zmq::context_t>(1);
             
-            // Initialize subscriber for packet streaming
+            // Initialize subscriber for packet streaming (multipart)
             sub_socket_ = std::make_unique<zmq::socket_t>(*context_, ZMQ_SUB);
             sub_socket_->connect(sub_endpoint_);
             
@@ -137,9 +137,9 @@ private:
                 if (multipart.recv(*sub_socket_, static_cast<int>(zmq::recv_flags::dontwait))) {
                     if (multipart.size() >= 2) {
                         std::string topic = multipart[0].to_string();
-                        std::string json_data = multipart[1].to_string();
-                        
-                        ProcessPacket(topic, json_data);
+                        std::string meta_json = multipart[1].to_string();
+                        // optional frames: raw packet data, optional chunk
+                        ProcessPacket(topic, meta_json);
                         packets_received_++;
                     }
                 }

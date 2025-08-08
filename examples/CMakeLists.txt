@@ -15,3 +15,18 @@ target_compile_features(packet_monitor PRIVATE cxx_std_17)
 set_target_properties(packet_monitor PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../bin/examples"
 )
+
+# FTXUI monitor (optional)
+option(BUILD_FTXUI_MONITOR "Build FTXUI-based packet monitor" ON)
+if (BUILD_FTXUI_MONITOR)
+    find_package(ftxui CONFIG QUIET)
+    if (ftxui_FOUND)
+        add_executable(packet_monitor_ftxui packet_monitor_ftxui.cpp)
+        target_link_libraries(packet_monitor_ftxui PRIVATE cppzmq nlohmann_json ftxui::screen ftxui::dom ftxui::component)
+        target_compile_features(packet_monitor_ftxui PRIVATE cxx_std_17)
+        set_target_properties(packet_monitor_ftxui PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../bin/examples"
+        )
+        target_compile_definitions(packet_monitor_ftxui PRIVATE -DKPACKET_PROTOCOL_V1)
+    endif()
+endif()
