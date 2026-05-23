@@ -48,16 +48,16 @@
             "name": "HorizonXI",
             "hidden": true,
             "environment": {
-                "ASHITA4_PLUGIN_PATH": "${env:APPDATA}/HorizonXI-Launcher/HorizonXI/Game/plugins",
-                "ASHITA4_SDK_PATH": "${env:ASHITA4_PLUGIN_PATH}/sdk"
+                "ASHITA4_PLUGIN_PATH": "$env{APPDATA}/HorizonXI-Launcher/HorizonXI/Game/plugins",
+                "ASHITA4_SDK_PATH": "$env{APPDATA}/HorizonXI-Launcher/HorizonXI/Game/plugins/sdk"
             }
         },
         {
             "name": "vcpkg",
             "hidden": true,
             "environment": {
-                "VCPKG_ROOT": "${env:USERPROFILE}/git/vcpkg",
-                "CMAKE_TOOLCHAIN_FILE": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+                "VCPKG_ROOT": "$env{USERPROFILE}/git/vcpkg",
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
             }
         },
         {
