@@ -31,6 +31,7 @@
 #include <queue>
 #include <memory>
 #include <functional>
+#include <optional>
 
 namespace kpacket {
 
@@ -75,6 +76,9 @@ public:
     using PacketInjector = std::function<bool(uint16_t id, const std::vector<uint8_t>& data)>;
     void SetPacketInjector(PacketInjector injector);
 
+    using PlayerNameProvider = std::function<std::optional<std::string>()>;
+    void SetPlayerNameProvider(PlayerNameProvider provider);
+
 private:
     Config config_;
     std::unique_ptr<zmq::context_t> context_;
@@ -103,6 +107,7 @@ private:
     std::function<bool(const PacketInfo&)> packet_filter_;
     std::map<std::string, CommandHandler> command_handlers_;
     PacketInjector packet_injector_;
+    PlayerNameProvider player_name_provider_;
     
     // Session and ids
     std::string session_uuid_;

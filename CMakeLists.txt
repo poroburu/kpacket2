@@ -25,6 +25,9 @@ cmake_minimum_required(VERSION 3.22)
 set(ASHITA_PROJECT_NAME "kpacket")
 project(${ASHITA_PROJECT_NAME} CXX)
 
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" KPACKET_RELEASE_VERSION_RAW)
+string(STRIP "${KPACKET_RELEASE_VERSION_RAW}" KPACKET_RELEASE_VERSION)
+
 # Enable generation of compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -68,6 +71,7 @@ set(${ASHITA_PROJECT_NAME}_src
 
 # Define the library..
 add_library(${ASHITA_PROJECT_NAME} MODULE ${${ASHITA_PROJECT_NAME}_res} ${${ASHITA_PROJECT_NAME}_src})
+target_compile_definitions(${ASHITA_PROJECT_NAME} PRIVATE "KPACKET_RELEASE_VERSION=\"${KPACKET_RELEASE_VERSION}\"")
 set_target_properties(${ASHITA_PROJECT_NAME} PROPERTIES
     CXX_EXTENSIONS ON           # Enable CXX extensions..
     CXX_STANDARD_REQUIRED ON    # Mark the CXX standard option as a requirement..

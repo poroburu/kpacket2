@@ -19,6 +19,7 @@
  * along with Ashita Example Plugin.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "kpacket.hpp"
+#include <optional>
 
 namespace kpacket
 {
@@ -92,6 +93,29 @@ namespace kpacket
                 this->log_->Logf(0, "kpacket", 
                     "Packet injection requested: ID=0x%04X, Size=%zu", pid, pdata.size());
                 return false;
+            });
+
+            zmq_relay_->SetPlayerNameProvider([this]() -> std::optional<std::string> {
+                if (!this->core_) {
+                    return std::nullopt;
+                }
+
+                const auto dm = this->core_->GetDataManager();
+                if (!dm) {
+                    return std::nullopt;
+                }
+
+                const auto party = dm->GetParty();
+                if (!party) {
+                    return std::nullopt;
+                }
+
+                const char* name = party->GetMemberName(0);
+                if (name && name[0] != '\0') {
+                    return std::string(name);
+                }
+
+                return std::nullopt;
             });
             
             if (!zmq_relay_->Initialize()) {

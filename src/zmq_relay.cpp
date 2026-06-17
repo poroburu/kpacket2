@@ -23,6 +23,10 @@
 #include <iostream>
 #include <chrono>
 
+#ifndef KPACKET_RELEASE_VERSION
+#define KPACKET_RELEASE_VERSION "unknown"
+#endif
+
 namespace kpacket {
 
 // Base64 encoding helper (simple implementation)
@@ -176,6 +180,10 @@ void ZmqRelay::SetPacketInjector(PacketInjector injector) {
     packet_injector_ = injector;
 }
 
+void ZmqRelay::SetPlayerNameProvider(PlayerNameProvider provider) {
+    player_name_provider_ = std::move(provider);
+}
+
 void ZmqRelay::PublisherThread() {
     while (running_) {
         std::unique_lock<std::mutex> lock(publish_mutex_);
@@ -322,6 +330,7 @@ std::string ZmqRelay::HandleStatusCommand(const nlohmann::json& /* params */) {
         {"reliable_queue", config_.enable_reliable_queue}
     };
     response["version"] = config_.protocol_version;
+    response["release_version"] = KPACKET_RELEASE_VERSION;
     response["session_uuid"] = session_uuid_;
     return response.dump();
 }
@@ -329,10 +338,18 @@ std::string ZmqRelay::HandleStatusCommand(const nlohmann::json& /* params */) {
 std::string ZmqRelay::HandleHelloCommand(const nlohmann::json& /*params*/) {
     nlohmann::json response;
     response["version"] = config_.protocol_version;
+    response["release_version"] = KPACKET_RELEASE_VERSION;
     response["session_uuid"] = session_uuid_;
     response["capabilities"] = {
         {"multipart_raw", config_.pub_use_multipart_raw}
     };
+
+    if (player_name_provider_) {
+        if (const auto playerName = player_name_provider_()) {
+            response["player_name"] = *playerName;
+        }
+    }
+
     return response.dump();
 }
 

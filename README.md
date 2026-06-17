@@ -49,9 +49,18 @@ vcpkg install cppzmq nlohmann-json
 
 Packets are streamed as JSON messages with comprehensive metadata including timestamp, direction, packet type, and base64-encoded data.
 
+## Compatibility
+
+Paired RC tags: **kpacket2 v0.1.0-rc.1** ↔ **kparser2 v0.1.0-rc.1** ↔ wire **`kpacket.v1`**.
+
+- Git semver is in the root [`VERSION`](VERSION) file; `hello` / `status` on `:5556` expose `release_version`.
+- Wire `version` in JSON meta remains `v1` until a breaking protocol change.
+
 ## Documentation
 
 See [docs/DESIGN.md](docs/DESIGN.md) for detailed architecture and implementation information.
+
+See [docs/RELEASING.md](docs/RELEASING.md) for versioned GitHub releases.
 
 ## License
 
