@@ -42,7 +42,7 @@ Copy any vcpkg runtime DLLs required beside `kpacket.dll` if your build links th
 git add VERSION CHANGELOG.md docs/RELEASING.md
 git commit -m "Release v$ver"
 git tag -a "v$ver" -m "kpacket2 v$ver"
-git push origin zmq-design2
+git push origin main
 git push origin "v$ver"
 
 gh release create "v$ver" "dist/kpacket2-v$ver-win-x86.zip" `
