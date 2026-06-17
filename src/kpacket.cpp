@@ -100,12 +100,12 @@ namespace kpacket
                     return std::nullopt;
                 }
 
-                const auto dm = this->core_->GetDataManager();
-                if (!dm) {
+                const auto mm = this->core_->GetMemoryManager();
+                if (!mm) {
                     return std::nullopt;
                 }
 
-                const auto party = dm->GetParty();
+                const auto party = mm->GetParty();
                 if (!party) {
                     return std::nullopt;
                 }
